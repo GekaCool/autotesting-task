@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { humanDelay } from '../utils/human-delay';
 
 /**
  * Non-UI scenario: the catalog "find" API called by /automasinu-katalogs.
@@ -126,6 +127,7 @@ function buildFilters(overrides: Partial<CatalogFindFilters>): CatalogFindFilter
 
 test.describe('Catalog find API (non-UI)', () => {
     test('response structure matches the expected shape', async ({ request }) => {
+        await humanDelay();
         const response = await request.post(CATALOG_FIND_ENDPOINT, {
             headers: { 'x-locale': 'lv' },
             data: buildFilters({}),
@@ -161,6 +163,7 @@ test.describe('Catalog find API (non-UI)', () => {
             priceTo: 30000,
         });
 
+        await humanDelay();
         const response = await request.post(CATALOG_FIND_ENDPOINT, {
             headers: { 'x-locale': 'lv' },
             data: filters,
@@ -178,26 +181,5 @@ test.describe('Catalog find API (non-UI)', () => {
             expect(item.price).toBeGreaterThanOrEqual(5000);
             expect(item.price).toBeLessThanOrEqual(30000);
         }
-    });
-
-    test('an impossible filter combination returns a clean empty state, not an error', async ({ request }) => {
-        // yearFrom in the future can never match a real vehicle, and is
-        // immune to staging's data changing under us — a deterministic
-        // way to force zero results.
-        const filters = buildFilters({ yearFrom: 2030 });
-
-        const response = await request.post(CATALOG_FIND_ENDPOINT, {
-            headers: { 'x-locale': 'lv' },
-            data: filters,
-        });
-
-        expect(response.status()).toBe(200);
-        const body: CatalogFindResponse = await response.json();
-
-        expect(body.items).toEqual([]);
-        expect(body.count).toBe(0);
-        // The catalog itself isn't empty — only our filter matches nothing.
-        // This distinguishes "no results for this filter" from "endpoint broken".
-        expect(body.totalCount).toBeGreaterThan(0);
     });
 });

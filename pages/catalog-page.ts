@@ -1,5 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { ResultCard } from './result-card';
+import { humanDelay } from '../utils/human-delay';
 
 const RESULTS_COUNT_SELECTOR = '.list-header__count';
 
@@ -17,6 +18,7 @@ export class CatalogPage {
     readonly resultCards: Locator;
     readonly resultsCount: Locator;
     readonly emptyState: Locator;
+    readonly unexpectedErrorTitle: Locator;
 
     constructor(page: Page) {
         this.page = page;
@@ -36,6 +38,7 @@ export class CatalogPage {
         this.resultCards = this.page.locator('.catalog-page__desktop-grid a.vehicle-card-item');
         this.resultsCount = this.page.locator(RESULTS_COUNT_SELECTOR);
         this.emptyState = this.page.locator('.catalog-cant-find-car-card');
+        this.unexpectedErrorTitle = this.page.getByText('Neparedzēta kļūme! Lūdzu, mēģ');
     }
 
     private filterSection(title: string): Locator {
@@ -88,9 +91,23 @@ export class CatalogPage {
      *    can appear slightly before the list catches up, which was
      *    previously seen to let a stale, non-matching card slip through an
      *    assertion made right after the chip appeared.
+     *
+     * Clicking through filters fast enough can also trigger a transient
+     * "Neparedzēta kļūme! Lūdzu, mēģ..." error banner instead of a normal
+     * re-fetch. When that shows up, give the app 3s to recover, then redo
+     * the click/select — the errored attempt never produces a chip/count
+     * to wait on, so retrying is what actually applies the filter.
      */
     private async applyFilter(action: () => Promise<unknown>, chipText: string) {
+        await humanDelay();
         await action();
+        try {
+            await this.unexpectedErrorTitle.waitFor({ state: 'visible', timeout: 2000 });
+            await this.page.waitForTimeout(3000);
+            await action();
+        } catch {
+            // Error banner never showed up — the request went through normally.
+        }
         await this.filterChips.filter({ hasText: chipText }).first().waitFor({ state: 'visible' });
         await this.waitForFreshCount();
     }

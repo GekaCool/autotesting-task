@@ -1,0 +1,13 @@
+services:
+  tests:
+    build: .
+    # workers: 2 in playwright.config.ts runs Chromium instances concurrently;
+    # without host IPC, Docker's default 64MB /dev/shm makes Chromium crash.
+    ipc: host
+    environment:
+      - BASE_URL=${BASE_URL:-}
+    ports:
+      - "9323:9323"
+    volumes:
+      - ./playwright-report:/app/playwright-report
+

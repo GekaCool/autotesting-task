@@ -19,7 +19,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : 1,
+  workers: process.env.CI ? 2 : 2,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Web-first assertions get a more forgiving default: staging is a live,
@@ -31,11 +31,13 @@ export default defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('')`. Never point this at production (longo.lv). */
     baseURL: process.env.BASE_URL || 'https://stage.longo.lv/',
-
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+    launchOptions: {
+      slowMo: 500,  // adds 500ms delay between every action
+    }
   },
-
+  retries: process.env.CI ? 2 : 1,
   /* Configure projects for major browsers */
   projects: [
     {

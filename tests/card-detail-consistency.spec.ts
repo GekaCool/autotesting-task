@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures/cookie-banner';
 import { CatalogPage } from '../pages/catalog-page';
 import { VehicleDetailPage } from '../pages/vehicle-detail-page';
+import { humanDelay } from '../utils/human-delay';
 
 test.describe('Card to detail page consistency', () => {
     test('price, model, year and mileage on the detail page match the catalog card', async ({
@@ -15,6 +16,7 @@ test.describe('Card to detail page consistency', () => {
         const cardMileage = await card.getMileageValue();
         const cardPrice = await card.getPriceValue();
 
+        await humanDelay();
         await card.root.click();
 
         const detailPage = new VehicleDetailPage(removedCookieBannerPage);
